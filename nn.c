@@ -3,61 +3,63 @@
 #define NN_IMPLEMENTATION
 #include "nn.h"
 
-typedef struct {
-    Mat a0;
-    Mat w1, b1, a1;
-    Mat w2, b2, a2;
-} Xor;
-
-float cost(Xor m, Mat ti, Mat to)
-{
-    assert(ti.rows == to.rows);
-    size_t n = ti.rows;
-
-    for (size_t i = 0; i < n; i++) {
-        
-    }
-}
-
-void forward_xor(Xor m)
-{
-    mat_dot(m.a1, m.a0, m.w1);
-    mat_sum(m.a1, m.b1);
-    mat_sig(m.a1);
-
-    mat_dot(m.a2, m.a1, m.w2);
-    mat_sum(m.a2, m.b2);
-    mat_sig(m.a2);
-}
+float td[] = {
+    0, 0, 0,
+    0, 1, 1,
+    1, 0, 1,
+    1, 1, 0
+};
 
 int main()
 {
     srand(time(0));
 
-    Xor m;
-    m.a0 = mat_alloc(1, 2);
-    m.w1 = mat_alloc(2, 2);
-    m.b1 = mat_alloc(1, 2);
-    m.a1 = mat_alloc(1, 2);
-    m.w2 = mat_alloc(2, 1);
-    m.b2 = mat_alloc(1, 1);
-    m.a2 = mat_alloc(1, 1);
+    size_t stride = 3;
+    size_t n = sizeof(td)/sizeof(td[0])/stride;
+    Mat ti = {
+        .rows = n,
+        .cols = 2,
+        .stride = stride,
+        .es = td
+    };
 
-    mat_rand(m.w1, 0.0f, 1.0f);
-    mat_rand(m.b1, 0.0f, 1.0f);
-    mat_rand(m.w2, 0.0f, 1.0f);
-    mat_rand(m.b2, 0.0f, 1.0f);
+    Mat to = {
+        .rows = n,
+        .cols = 1,
+        .stride = stride,
+        .es = td + 2,
+    };
+
+    size_t arch[] = {2, 2, 1};
+    NN nn = nn_alloc(arch, ARRAY_LEN(arch));
+    NN g  = nn_alloc(arch, ARRAY_LEN(arch));
+    nn_rand(nn, 0.0f, 1.0f);
+
+    float eps = 1e-1;
+    float rate = 1e-1;
+
+    for (size_t i = 0; i < 20*1000; i++) {
+        nn_finite_diff(nn, g, eps, ti, to);
+        nn_learn(nn, g, rate);
+        printf("cost = %f\n", nn_cost(nn, ti, to));
+    }
+
+    printf("------------------\n");
 
     for (size_t i = 0; i < 2; i++) {
         for (size_t j = 0; j < 2; j++) {
-            MAT_AT(m.a0, 0, 0) = i;
-            MAT_AT(m.a0, 0, 1) = j;
-            forward_xor(m);
-            float y = *m.a2.es;
+            MAT_AT(NN_INPUT(nn), 0, 0) = i;
+            MAT_AT(NN_INPUT(nn), 0, 1) = j;
+            nn_forward(nn);
+            float y = *NN_OUTPUT(nn).es;
 
             printf("%zu ^ %zu = %f\n", i, j, y);
         }
     }
+
+    printf("------------------\n");
+
+    NN_PRINT(nn);
 
     return 0;
 }
