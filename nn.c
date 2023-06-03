@@ -21,7 +21,7 @@ int main()
 {
     srand(time(0));
 
-    float *td = td_or;
+    float *td = td_xor;
 
     size_t stride = 3;
     size_t n = 4;
@@ -46,7 +46,7 @@ int main()
 
     float rate = 1e-1;
 
-    for (size_t i = 0; i < 5000; i++) {
+    for (size_t i = 0; i < 10*5000; i++) {
         nn_backprop(nn, g, ti, to);
         nn_learn(nn, g, rate);
         printf("%zu: cost = %f\n", i, nn_cost(nn, ti, to));
