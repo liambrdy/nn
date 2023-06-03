@@ -1,7 +1,7 @@
 #define NN_IMPLEMENTATION
 #include "nn.h"
 
-#define BITS 2
+#define BITS 3
 
 int main()
 {
@@ -29,30 +29,46 @@ int main()
 
     float rate = 1;
 
-    for (size_t i = 0; i < 50*1000; i++) {
+    for (size_t i = 0; i < 5*1000; i++) {
+#if 0
         nn_backprop(nn, g, ti, to);
+#else
+        nn_finite_diff(nn, g, 1e-1, ti, to);
+#endif
         nn_learn(nn, g, rate);
         printf("c = %f\n", nn_cost(nn, ti, to));
     }
     NN_PRINT(nn);
 
+    size_t fails = 0;
     for (size_t x = 0; x < n; x++) {
         for (size_t y = 0; y < n; y++) {
+            size_t z = x+y;
             for (size_t j = 0; j < BITS; j++) {
                 MAT_AT(NN_INPUT(nn), 0, j) = (x>>j)&1;
                 MAT_AT(NN_INPUT(nn), 0, j + BITS) = (y>>j)&1;
             }
-            
             nn_forward(nn);
-            size_t z = 0;
-            for (size_t j = 0; j < BITS; j++) {
-                size_t bit = MAT_AT(NN_OUTPUT(nn), 0, j) > 0.5f;
-                z |= bit<<j;
+            if (MAT_AT(NN_OUTPUT(nn), 0, BITS) > 0.5f) {
+                if (z < n) {
+                    printf("%zu + %zu = (OVERFLOW<>%zu)\n", x, y, z);
+                    fails += 1;
+                }
+            } else {
+                size_t a = 0;
+                for (size_t j = 0; j < BITS; j++) {
+                    size_t bit = MAT_AT(NN_OUTPUT(nn), 0, j) > 0.5f;
+                    a |= bit<<j;
+                }
+                if (z != a) {
+                    printf("%zu + %zu = (%zu<>%zu)\n", x, y, z, a);
+                    fails += 1;
+                }
             }
-
-            printf("%zu + %zu = %zu\n", x , y, z);
         }
     }
+
+    if (fails == 0) printf("OK\n");
 
     return 0;
 }
