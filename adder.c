@@ -1,7 +1,7 @@
 #define NN_IMPLEMENTATION
 #include "nn.h"
 
-#define BITS 3
+#define BITS 4
 
 int main()
 {
@@ -29,8 +29,8 @@ int main()
 
     float rate = 1;
 
-    for (size_t i = 0; i < 5*1000; i++) {
-#if 0
+    for (size_t i = 0; i < 50*1000; i++) {
+#if 1
         nn_backprop(nn, g, ti, to);
 #else
         nn_finite_diff(nn, g, 1e-1, ti, to);
