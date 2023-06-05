@@ -1,5 +1,12 @@
 /.vscode
+/out
 
 nn
 adder
 dump_nn
+xor
+xor_gen
+adder_gen
+gym
+
+*.mat
